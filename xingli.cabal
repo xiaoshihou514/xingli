@@ -1,0 +1,42 @@
+cabal-version:   3.0
+name:            xingli
+version:         0.1.0.0
+license:         GPL-3.0-only
+license-file:    LICENSE
+maintainer:      xiaoshihou@tutamail.com
+author:          xiaoshihou
+category:        Language
+build-type:      Simple
+extra-doc-files: README.md
+
+common base
+    default-language: GHC2024
+    ghc-options:      -Wall
+    build-depends:
+        base >=4.13 && <5,
+        containers
+
+executable xingli
+    import:           base
+    main-is:          Main.hs
+    hs-source-dirs:   app
+
+library
+    import:           base
+    hs-source-dirs:   src
+    exposed-modules:
+        LDef
+        Parser
+
+test-suite xingli-test
+    import:           base
+    type:             exitcode-stdio-1.0
+    main-is:          Tests.hs
+    hs-source-dirs:   test
+    other-modules:
+        TUtils,
+        ParserTest
+    build-depends:
+        xingli,
+        tasty,
+        tasty-hunit
