@@ -110,7 +110,7 @@ pp = fromJust . pp' emptyEnv
         notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
 
     unifyctx :: TypeCtx CurryType -> TypeCtx CurryType -> Maybe (PrincipalPair -> PrincipalPair)
-    unifyctx ctx1 ctx2 = liftPP . foldr1 (.) <$> sequence subs
+    unifyctx ctx1 ctx2 = liftPP . foldr (.) id <$> sequence subs
       where
         subs :: [Maybe (CurryType -> CurryType)]
         subs = [unify a b | (x, a) <- Map.toList env1, b <- maybeToList $ Map.lookup x env2]
