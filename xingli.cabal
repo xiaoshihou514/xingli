@@ -27,6 +27,7 @@ library
     exposed-modules:
         LDef
         Parser
+        CurryTypes
 
 test-suite xingli-test
     import:           base
@@ -35,7 +36,8 @@ test-suite xingli-test
     hs-source-dirs:   test
     other-modules:
         TUtils,
-        ParserTest
+        ParserTest,
+        CurryTyperTest
     build-depends:
         xingli,
         tasty,
