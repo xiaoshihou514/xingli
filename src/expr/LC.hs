@@ -1,27 +1,22 @@
-module CurryTypes where
+module LC where
 
+import CurryTypes
 import Data.Char (chr, ord)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe
-import LDef
 
-data CurryType = Phi Char | Arrow CurryType CurryType
-  deriving (Show, Eq)
+-- definition for Lambda calculus
 
-prettyCT :: CurryType -> String
-prettyCT (Phi c) = [c]
-prettyCT (Arrow a b) = left ++ " -> " ++ prettyCT b
-  where
-    left = case a of
-      Phi c -> [c]
-      _ -> "(" ++ prettyCT a ++ ")"
+data Term = V Char | Ab Char Term | Ap Term Term
+  deriving (Eq, Show)
 
-prettyPP :: (TypeCtx CurryType, CurryType) -> String
-prettyPP (ctx, ty) = "env:\n" ++ show ctx ++ "\n" ++ prettyCT ty
+prettyT :: Term -> String
+prettyT (V c) = [c]
+prettyT (Ab c t) = ('\\' : c : '.' : '(' : prettyT t) ++ ")"
+prettyT (Ap f x) = prettyT f ++ (' ' : prettyT x)
 
-(-->) :: CurryType -> CurryType -> CurryType
-(-->) = Arrow
+-- Code for deriving Curry type of a Lambda term
 
 type Label = Char
 
@@ -60,6 +55,9 @@ union (TypeCtx envl ll) (TypeCtx envr lr) =
   TypeCtx (Map.union envl envr) (chr (max (ord ll) (ord lr)))
 
 type PrincipalPair = (TypeCtx CurryType, CurryType)
+
+prettyPP :: (TypeCtx CurryType, CurryType) -> String
+prettyPP (ctx, ty) = "env:\n" ++ show ctx ++ "\n" ++ prettyCT ty
 
 -- The pricipal type algorithm for deriving curry types
 pp :: Term -> PrincipalPair

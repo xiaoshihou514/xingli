@@ -4,7 +4,7 @@ module CurryTyperTest where
 
 import CurryTypes hiding ((-->))
 import Data.Map qualified as Map
-import LDef
+import LC
 import TUtils
 import Test.Tasty
 import Test.Tasty.HUnit

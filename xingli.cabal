@@ -23,10 +23,15 @@ executable xingli
 
 library
     import:           base
-    hs-source-dirs:   src
+    hs-source-dirs:
+        src
+        src/expr/
+        src/types/
     exposed-modules:
-        LDef
-        Parser
+        LC
+        LCN
+        LCNR
+        LCParser
         CurryTypes
 
 test-suite xingli-test

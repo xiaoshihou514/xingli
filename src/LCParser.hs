@@ -1,6 +1,8 @@
-module Parser where
+module LCParser where
 
-import LDef
+-- Parser for lambda calculus
+
+import LC
 
 type Parser a = String -> (a, String)
 

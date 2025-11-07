@@ -2,8 +2,8 @@
 
 module ParserTest where
 
-import LDef
-import Parser
+import LC
+import LCParser
 import TUtils
 import Test.Tasty
 import Test.Tasty.HUnit
