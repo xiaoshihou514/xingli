@@ -32,6 +32,13 @@ data TypeCtx = TypeCtx
     label :: Label
   }
 
+emptyEnv :: TypeCtx
+emptyEnv = TypeCtx Map.empty 'A'
+
+union :: TypeCtx -> TypeCtx -> TypeCtx
+union (TypeCtx envl ll) (TypeCtx envr lr) =
+  TypeCtx (Map.union envl envr) (chr (max (ord ll) (ord lr)))
+
 next :: TypeCtx -> (CurryType, TypeCtx)
 next (TypeCtx env l) = let l' = fresh l in (Phi l, TypeCtx env l')
 
@@ -48,18 +55,11 @@ instance Pretty (TypeCtx) where
         let show' (v, ty) = [v] ++ ": " ++ pretty ty
          in unlines $ map show' $ Map.toList env
 
-instance Show (TypeCtx) where
+instance Show (TypeCtx) where -- needed for tests
   show = pretty
 
-instance Eq (TypeCtx) where
+instance Eq (TypeCtx) where -- ignore label state
   ctx1 == ctx2 = env ctx1 == env ctx2
-
-emptyEnv :: TypeCtx
-emptyEnv = TypeCtx Map.empty 'A'
-
-union :: TypeCtx -> TypeCtx -> TypeCtx
-union (TypeCtx envl ll) (TypeCtx envr lr) =
-  TypeCtx (Map.union envl envr) (chr (max (ord ll) (ord lr)))
 
 type PrincipalPair = (TypeCtx, CurryType)
 
