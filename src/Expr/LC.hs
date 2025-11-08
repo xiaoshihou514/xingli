@@ -1,7 +1,7 @@
 module Expr.LC where
 
 import Data.Char (chr, ord)
-import Data.Map (Map)
+import Data.Map (Map, (!?))
 import Data.Map qualified as Map
 import Data.Maybe
 import Pretty
@@ -77,7 +77,7 @@ pp = fromJust . pp' emptyEnv
        in Just (add c a ctx', a)
     pp' ctx (Ab x m) = do
       (ctx', p) <- pp' ctx m
-      case Map.lookup x (env ctx') of
+      case env ctx' !? x of
         Just ty -> Just (ctx', ty --> p)
         Nothing -> do
           let (a, ctx'') = next ctx'
@@ -90,35 +90,35 @@ pp = fromJust . pp' emptyEnv
       s2 <- unifyctx (apply s1 ctx1) (apply s1 ctx3)
       return $ s2 . liftPP s1 $ (ctx1 `union` ctx3, a)
 
-    liftPP :: (CurryType -> CurryType) -> (PrincipalPair -> PrincipalPair)
-    liftPP f (TypeCtx env l, a) = (TypeCtx (Map.map f env) l, f a)
+liftPP :: (CurryType -> CurryType) -> (PrincipalPair -> PrincipalPair)
+liftPP f (TypeCtx env l, a) = (TypeCtx (Map.map f env) l, f a)
 
-    unify :: CurryType -> CurryType -> Maybe (CurryType -> CurryType)
-    unify left right
-      | (Phi p1) <- left, (Phi p2) <- right, p1 == p2 = Just id
-      | (Phi p) <- left,
-        p `notOccur` right =
-          let subst ty = case ty of
-                Phi _ -> if ty == left then right else ty
-                Arrow a b -> Arrow (subst a) (subst b)
-           in Just subst
-      | (Phi _) <- right = unify right left
-      | (Arrow a b) <- left,
-        (Arrow c d) <- right =
-          do
-            s1 <- unify a c
-            s2 <- unify (s1 b) (s1 d)
-            return $ s2 . s1
-      | otherwise = Nothing
-      where
-        notOccur :: Label -> CurryType -> Bool
-        notOccur p (Phi a) = p /= a
-        notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
+unify :: CurryType -> CurryType -> Maybe (CurryType -> CurryType)
+unify left right
+  | (Phi p1) <- left, (Phi p2) <- right, p1 == p2 = Just id
+  | (Phi p) <- left,
+    p `notOccur` right =
+      let subst ty = case ty of
+            Phi _ -> if ty == left then right else ty
+            Arrow a b -> Arrow (subst a) (subst b)
+       in Just subst
+  | (Phi _) <- right = unify right left
+  | (Arrow a b) <- left,
+    (Arrow c d) <- right =
+      do
+        s1 <- unify a c
+        s2 <- unify (s1 b) (s1 d)
+        return $ s2 . s1
+  | otherwise = Nothing
+  where
+    notOccur :: Label -> CurryType -> Bool
+    notOccur p (Phi a) = p /= a
+    notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
 
-    unifyctx :: TypeCtx -> TypeCtx -> Maybe (PrincipalPair -> PrincipalPair)
-    unifyctx ctx1 ctx2 = liftPP . foldr (.) id <$> sequence subs
-      where
-        subs :: [Maybe (CurryType -> CurryType)]
-        subs = [unify a b | (x, a) <- Map.toList env1, b <- maybeToList $ Map.lookup x env2]
-        env1 = env ctx1
-        env2 = env ctx2
+unifyctx :: TypeCtx -> TypeCtx -> Maybe (PrincipalPair -> PrincipalPair)
+unifyctx ctx1 ctx2 = liftPP . foldr (.) id <$> sequence subs
+  where
+    subs :: [Maybe (CurryType -> CurryType)]
+    subs = [unify a b | (x, a) <- Map.toList env1, b <- maybeToList $ Map.lookup x env2]
+    env1 = env ctx1
+    env2 = env ctx2
