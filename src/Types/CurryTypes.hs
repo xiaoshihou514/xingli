@@ -1,4 +1,4 @@
-module CurryTypes where
+module Types.CurryTypes where
 
 import Pretty
 

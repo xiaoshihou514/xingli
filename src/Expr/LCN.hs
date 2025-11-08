@@ -1,8 +1,8 @@
-module LCN where
+module Expr.LCN where
 
 -- Definition for Lambda calculus with names
 
-import LC
+import Expr.LC
 
 data Def = Def
   { name :: String,

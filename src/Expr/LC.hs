@@ -1,11 +1,11 @@
-module LC where
+module Expr.LC where
 
-import CurryTypes
 import Data.Char (chr, ord)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe
 import Pretty
+import Types.CurryTypes
 
 -- definition for Lambda calculus
 
@@ -48,17 +48,17 @@ add c ty (TypeCtx env l) = TypeCtx (Map.insert c ty env) l
 apply :: (CurryType -> CurryType) -> TypeCtx -> TypeCtx
 apply f (TypeCtx env l) = TypeCtx (Map.map f env) l
 
-instance Pretty (TypeCtx) where
+instance Pretty TypeCtx where
   pretty (TypeCtx env _)
     | null env = "[]"
     | otherwise =
         let show' (v, ty) = [v] ++ ": " ++ pretty ty
          in unlines $ map show' $ Map.toList env
 
-instance Show (TypeCtx) where -- needed for tests
+instance Show TypeCtx where -- needed for tests
   show = pretty
 
-instance Eq (TypeCtx) where -- ignore label state
+instance Eq TypeCtx where -- ignore label state
   ctx1 == ctx2 = env ctx1 == env ctx2
 
 type PrincipalPair = (TypeCtx, CurryType)

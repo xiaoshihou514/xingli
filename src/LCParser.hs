@@ -2,7 +2,7 @@ module LCParser where
 
 -- Parser for lambda calculus
 
-import LC
+import Expr.LC
 
 type Parser a = String -> (a, String)
 

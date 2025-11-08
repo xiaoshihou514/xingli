@@ -2,7 +2,7 @@
 
 module ParserTest where
 
-import LC
+import Expr.LC
 import LCParser
 import TUtils
 import Test.Tasty

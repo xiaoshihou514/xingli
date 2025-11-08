@@ -2,12 +2,12 @@
 
 module CurryTyperTest where
 
-import CurryTypes hiding ((-->))
 import Data.Map qualified as Map
-import LC
+import Expr.LC
 import TUtils
 import Test.Tasty
 import Test.Tasty.HUnit
+import Types.CurryTypes hiding ((-->))
 
 curryTyperTests :: TestTree
 curryTyperTests =
