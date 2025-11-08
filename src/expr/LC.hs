@@ -5,65 +5,73 @@ import Data.Char (chr, ord)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe
+import Pretty
 
 -- definition for Lambda calculus
 
 data Term = V Char | Ab Char Term | Ap Term Term
   deriving (Eq, Show)
 
-prettyT :: Term -> String
-prettyT (V c) = [c]
-prettyT (Ab c t) = ('\\' : c : '.' : '(' : prettyT t) ++ ")"
-prettyT (Ap f x) = prettyT f ++ (' ' : prettyT x)
+instance Pretty Term where
+  pretty :: Term -> String
+  pretty (V c) = [c]
+  pretty (Ab c t) = ('\\' : c : '.' : '(' : pretty t) ++ ")"
+  pretty (Ap f x) = pretty f ++ (' ' : pretty x)
 
 -- Code for deriving Curry type of a Lambda term
 
+-- The label state for making fresh type labels
 type Label = Char
 
 fresh :: Label -> Label
 fresh = chr . (+ 1) . ord
 
-next :: TypeCtx CurryType -> (CurryType, TypeCtx CurryType)
-next (TypeCtx env l) = let l' = fresh l in (Phi l, TypeCtx env l')
-
-add :: Char -> CurryType -> TypeCtx CurryType -> TypeCtx CurryType
-add c ty (TypeCtx env l) = TypeCtx (Map.insert c ty env) l
-
-data TypeCtx a = TypeCtx
-  { env :: Map Char a,
+-- The context for the principal pair algorithm
+data TypeCtx = TypeCtx
+  { env :: Map Char CurryType,
     label :: Label
   }
 
-instance Functor TypeCtx where
-  fmap f (TypeCtx env l) = TypeCtx (Map.map f env) l
+next :: TypeCtx -> (CurryType, TypeCtx)
+next (TypeCtx env l) = let l' = fresh l in (Phi l, TypeCtx env l')
 
-instance Show (TypeCtx CurryType) where
-  show (TypeCtx env _)
+add :: Char -> CurryType -> TypeCtx -> TypeCtx
+add c ty (TypeCtx env l) = TypeCtx (Map.insert c ty env) l
+
+apply :: (CurryType -> CurryType) -> TypeCtx -> TypeCtx
+apply f (TypeCtx env l) = TypeCtx (Map.map f env) l
+
+instance Pretty (TypeCtx) where
+  pretty (TypeCtx env _)
     | null env = "[]"
     | otherwise =
-        let show' (v, ty) = [v] ++ ": " ++ prettyCT ty
+        let show' (v, ty) = [v] ++ ": " ++ pretty ty
          in unlines $ map show' $ Map.toList env
 
-instance Eq (TypeCtx CurryType) where
+instance Show (TypeCtx) where
+  show = pretty
+
+instance Eq (TypeCtx) where
   ctx1 == ctx2 = env ctx1 == env ctx2
 
-emptyEnv :: TypeCtx CurryType
+emptyEnv :: TypeCtx
 emptyEnv = TypeCtx Map.empty 'A'
 
-union :: TypeCtx CurryType -> TypeCtx CurryType -> TypeCtx CurryType
+union :: TypeCtx -> TypeCtx -> TypeCtx
 union (TypeCtx envl ll) (TypeCtx envr lr) =
   TypeCtx (Map.union envl envr) (chr (max (ord ll) (ord lr)))
 
-type PrincipalPair = (TypeCtx CurryType, CurryType)
+type PrincipalPair = (TypeCtx, CurryType)
 
-prettyPP :: (TypeCtx CurryType, CurryType) -> String
-prettyPP (ctx, ty) = "env:\n" ++ show ctx ++ "\n" ++ prettyCT ty
+instance Pretty PrincipalPair where
+  pretty :: (TypeCtx, CurryType) -> String
+  pretty (ctx, ty) = "env:\n" ++ pretty ctx ++ "\n" ++ pretty ty
 
 -- The pricipal type algorithm for deriving curry types
 pp :: Term -> PrincipalPair
 pp = fromJust . pp' emptyEnv
   where
-    pp' :: TypeCtx CurryType -> Term -> Maybe PrincipalPair
+    pp' :: TypeCtx -> Term -> Maybe PrincipalPair
     pp' ctx (V c) =
       let (a, ctx') = next ctx
        in Just (add c a ctx', a)
@@ -79,7 +87,7 @@ pp = fromJust . pp' emptyEnv
       (ctx2, p2) <- pp' ctx1 n
       let (a, ctx3) = next ctx2
       s1 <- unify p1 (p2 --> a)
-      s2 <- unifyctx (fmap s1 ctx1) (fmap s1 ctx3)
+      s2 <- unifyctx (apply s1 ctx1) (apply s1 ctx3)
       return $ s2 . liftPP s1 $ (ctx1 `union` ctx3, a)
 
     liftPP :: (CurryType -> CurryType) -> (PrincipalPair -> PrincipalPair)
@@ -107,7 +115,7 @@ pp = fromJust . pp' emptyEnv
         notOccur p (Phi a) = p /= a
         notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
 
-    unifyctx :: TypeCtx CurryType -> TypeCtx CurryType -> Maybe (PrincipalPair -> PrincipalPair)
+    unifyctx :: TypeCtx -> TypeCtx -> Maybe (PrincipalPair -> PrincipalPair)
     unifyctx ctx1 ctx2 = liftPP . foldr (.) id <$> sequence subs
       where
         subs :: [Maybe (CurryType -> CurryType)]

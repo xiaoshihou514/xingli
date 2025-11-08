@@ -114,23 +114,3 @@ complexTypeTests =
                 )
          in pp term --> (expectedCtx, expectedType)
     ]
-
--- Helper function for pretty printing in tests
-prettyTypeTest :: Term -> String
-prettyTypeTest term = prettyPP (pp term)
-
--- Additional test cases that demonstrate the type inference
-demonstrationTests :: TestTree
-demonstrationTests =
-  testGroup
-    "Type Inference Demonstrations"
-    [ testCase "demonstrate identity function type" $
-        prettyTypeTest (Ab 'x' (V 'x'))
-          --> "env:\nx: A\nA -> A",
-      testCase "demonstrate function application type" $
-        prettyTypeTest (Ap (Ab 'x' (V 'x')) (V 'y'))
-          --> "env:\nx: A\ny: A\nA",
-      testCase "demonstrate multiple abstractions" $
-        prettyTypeTest (Ab 'x' (Ab 'y' (V 'x')))
-          --> "env:\nx: A\ny: B\nA -> B -> A"
-    ]

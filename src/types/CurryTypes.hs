@@ -1,17 +1,20 @@
 module CurryTypes where
 
+import Pretty
+
 -- Definition for the Curry type system
 
 data CurryType = Phi Char | Arrow CurryType CurryType
   deriving (Show, Eq)
 
-prettyCT :: CurryType -> String
-prettyCT (Phi c) = [c]
-prettyCT (Arrow a b) = left ++ " -> " ++ prettyCT b
-  where
-    left = case a of
-      Phi c -> [c]
-      _ -> "(" ++ prettyCT a ++ ")"
+instance Pretty CurryType where
+  pretty :: CurryType -> String
+  pretty (Phi c) = [c]
+  pretty (Arrow a b) = left ++ " -> " ++ pretty b
+    where
+      left = case a of
+        Phi c -> [c]
+        _ -> "(" ++ pretty a ++ ")"
 
 (-->) :: CurryType -> CurryType -> CurryType
 (-->) = Arrow
