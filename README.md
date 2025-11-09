@@ -1,11 +1,11 @@
-**型理** (xíng lǐ, reason of types) is an educational typer for lambda calculus, covering basic curry types, $\Lambda_N$、$\Lambda_{NR}$, ML type.
+**型理** (xíng lǐ, reason of types) is an educational typer for lambda calculus, covering basic curry types, $\Lambda_N$, $\Lambda_{NR}$, ML type.
 
 Accompanying blog post:
 
 - Basic curry types, p1: https://xiaoshihou514.github.io/blogs/2025-11-3.html
 - Basic curry types, p2: https://xiaoshihou514.github.io/blogs/2025-11-8.html
 
-**型理**是一个教学Lambda式类型推导器，涵盖基本柯里类型、$\Lambda_N$、$\Lambda_{NR}$、ML类型。
+**型理**是一个教学Lambda式类型推导器，涵盖基本柯里类型, $\Lambda_N$, $\Lambda_{NR}$, ML类型。
 
 解释性的博客:
 
