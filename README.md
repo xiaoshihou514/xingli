@@ -9,8 +9,8 @@ Accompanying blog post:
 
 解释性的博客:
 
-- 基本柯里类型（上）：https://xiaoshihou514.github.io/blogs/2025-11-3.html
-- 基本柯里类型（下）：https://xiaoshihou514.github.io/blogs/2025-11-8.html
+- 基本柯里类型（上）：https://xiaoshihou514.github.io/zh/blogs/2025-11-3.html
+- 基本柯里类型（下）：https://xiaoshihou514.github.io/zh/blogs/2025-11-8.html
 
 ```haskell
 cabal run
