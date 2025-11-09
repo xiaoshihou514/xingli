@@ -29,7 +29,7 @@ library
         Expr.LCN
         Expr.LCNR
         Types.CurryTypes
-        LCParser
+        Parser.LC
         Pretty
 
 test-suite xingli-test
@@ -39,8 +39,9 @@ test-suite xingli-test
     hs-source-dirs:   test
     other-modules:
         TUtils,
-        ParserTest,
-        CurryTyperTest
+        LCParserTest,
+        LCTyperTest,
+        LCNTyperTest
     build-depends:
         xingli,
         tasty,

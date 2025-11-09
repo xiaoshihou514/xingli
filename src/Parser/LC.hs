@@ -1,4 +1,4 @@
-module LCParser where
+module Parser.LC where
 
 -- Parser for lambda calculus
 

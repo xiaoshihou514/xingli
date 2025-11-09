@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module ParserTest where
+module LCParserTest where
 
 import Expr.LC
-import LCParser
+import Parser.LC
 import TUtils
 import Test.Tasty
 import Test.Tasty.HUnit
 
-parserTests :: TestTree
-parserTests =
+lcParserTests :: TestTree
+lcParserTests =
   testGroup
     "Parser Tests"
     [ variableTests,

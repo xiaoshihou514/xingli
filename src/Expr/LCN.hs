@@ -49,7 +49,7 @@ ppln (Program defs main) = do
     -- The only added case
     ppln' (Name n) e ctx = do
       ty <- e !? n
-      return (ctx, freshInstance ctx ty)
+      return $ freshInstance ctx ty
     -- The following are exactly the same except we pass Env around
     ppln' (V c) _ ctx =
       let (a, ctx') = next ctx
@@ -69,5 +69,18 @@ ppln (Program defs main) = do
       s2 <- unifyctx (apply s1 ctx1) (apply s1 ctx3)
       return $ s2 . liftPP s1 $ (ctx1 `union` ctx3, a)
 
-    freshInstance :: TypeCtx -> CurryType -> CurryType
-    freshInstance = undefined
+    freshInstance :: TypeCtx -> CurryType -> PrincipalPair
+    freshInstance = (fst .) . freshInstance' Map.empty
+      where
+        freshInstance' ::
+          Map Char CurryType ->
+          TypeCtx ->
+          CurryType ->
+          (PrincipalPair, Map Char CurryType)
+        freshInstance' env ctx (Phi c) = case env !? c of
+          Just ty -> ((ctx, ty), env)
+          Nothing -> let (ty', ctx') = next ctx in ((ctx', ty'), Map.insert c ty' env)
+        freshInstance' env ctx (Arrow left right) = ((ctx'', Arrow tyl tyr), env'')
+          where
+            ((ctx', tyl), env') = freshInstance' env ctx left
+            ((ctx'', tyr), env'') = freshInstance' env' ctx' right

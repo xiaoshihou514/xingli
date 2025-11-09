@@ -68,8 +68,8 @@ instance Pretty PrincipalPair where
   pretty (ctx, ty) = "env:\n" ++ pretty ctx ++ "\n" ++ pretty ty
 
 -- The pricipal type algorithm for deriving curry types
-pp :: Term -> PrincipalPair
-pp = fromJust . pp' emptyEnv
+pp :: Term -> Maybe PrincipalPair
+pp = pp' emptyEnv
   where
     pp' :: TypeCtx -> Term -> Maybe PrincipalPair
     pp' ctx (V c) =

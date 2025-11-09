@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CurryTyperTest where
+module LCTyperTest where
 
 import Data.Map qualified as Map
 import Expr.LC
@@ -12,7 +12,7 @@ import Types.CurryTypes hiding ((-->))
 curryTyperTests :: TestTree
 curryTyperTests =
   testGroup
-    "Curry Type Inference Tests"
+    "LC Inference Tests"
     [ variableTypeTests,
       abstractionTypeTests,
       applicationTypeTests,
@@ -24,9 +24,9 @@ variableTypeTests =
   testGroup
     "Variable Type Inference"
     [ testCase "type of single variable" $
-        pp (V 'x') --> (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Phi 'A'),
+        pp (V 'x') --> Just (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Phi 'A'),
       testCase "type of another variable" $
-        pp (V 'y') --> (TypeCtx (Map.fromList [('y', Phi 'A')]) 'B', Phi 'A')
+        pp (V 'y') --> Just (TypeCtx (Map.fromList [('y', Phi 'A')]) 'B', Phi 'A')
     ]
 
 abstractionTypeTests :: TestTree
@@ -34,12 +34,13 @@ abstractionTypeTests =
   testGroup
     "Abstraction Type Inference"
     [ testCase "type of identity function" $
-        pp (Ab 'x' (V 'x')) --> (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Arrow (Phi 'A') (Phi 'A')),
+        pp (Ab 'x' (V 'x')) --> Just (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Arrow (Phi 'A') (Phi 'A')),
       testCase "type of constant function" $
         pp (Ab 'x' (Ab 'y' (V 'x')))
-          --> ( TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C',
-                Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
-              )
+          --> Just
+            ( TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C',
+              Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
+            )
     ]
 
 applicationTypeTests :: TestTree
@@ -48,22 +49,23 @@ applicationTypeTests =
     "Application Type Inference"
     [ testCase "type of simple application" $
         pp (Ap (V 'f') (V 'x'))
-          --> (TypeCtx (Map.fromList [('f', Arrow (Phi 'B') (Phi 'C')), ('x', Phi 'B')]) 'C', Phi 'C'),
+          --> Just (TypeCtx (Map.fromList [('f', Arrow (Phi 'B') (Phi 'C')), ('x', Phi 'B')]) 'C', Phi 'C'),
       testCase "type of left-associative application" $
         pp (Ap (Ap (V 'f') (V 'x')) (V 'y'))
-          --> ( TypeCtx
-                  ( Map.fromList
-                      [ ('f', Arrow (Phi 'B') (Arrow (Phi 'D') (Phi 'E'))),
-                        ('x', Phi 'B'),
-                        ('y', Phi 'D')
-                      ]
-                  )
-                  'F',
-                Phi 'E'
-              ),
+          --> Just
+            ( TypeCtx
+                ( Map.fromList
+                    [ ('f', Arrow (Phi 'B') (Arrow (Phi 'D') (Phi 'E'))),
+                      ('x', Phi 'B'),
+                      ('y', Phi 'D')
+                    ]
+                )
+                'F',
+              Phi 'E'
+            ),
       testCase "type of application with abstraction" $
         pp (Ap (Ab 'x' (V 'x')) (V 'y'))
-          --> (TypeCtx (Map.fromList [('x', Phi 'C'), ('y', Phi 'C')]) 'C', Phi 'C')
+          --> Just (TypeCtx (Map.fromList [('x', Phi 'C'), ('y', Phi 'C')]) 'C', Phi 'C')
     ]
 
 complexTypeTests :: TestTree
@@ -88,12 +90,12 @@ complexTypeTests =
                     (Arrow (Phi 'E') (Phi 'F'))
                     (Arrow (Phi 'E') (Phi 'G'))
                 )
-         in pp term --> (expectedCtx, expectedType),
+         in pp term --> Just (expectedCtx, expectedType),
       testCase "type of K combinator" $
         let term = Ab 'x' (Ab 'y' (V 'x'))
             expectedCtx = TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C'
             expectedType = Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
-         in pp term --> (expectedCtx, expectedType),
+         in pp term --> Just (expectedCtx, expectedType),
       testCase "type of function composition" $
         let term = Ab 'f' (Ab 'g' (Ab 'x' (Ap (V 'f') (Ap (V 'g') (V 'x')))))
             expectedCtx =
@@ -112,5 +114,5 @@ complexTypeTests =
                     (Arrow (Phi 'C') (Phi 'D'))
                     (Arrow (Phi 'C') (Phi 'E'))
                 )
-         in pp term --> (expectedCtx, expectedType)
+         in pp term --> Just (expectedCtx, expectedType)
     ]
