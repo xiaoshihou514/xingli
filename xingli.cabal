@@ -30,7 +30,9 @@ library
         Expr.LCNR
         Types.CurryTypes
         Parser.LC
-        Pretty
+        Parser.Applicative
+        Parser.LCN
+        Typeclasses
 
 test-suite xingli-test
     import:           base

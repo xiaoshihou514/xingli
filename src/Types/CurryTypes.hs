@@ -1,6 +1,6 @@
 module Types.CurryTypes where
 
-import Pretty
+import Typeclasses
 
 -- Definition for the Curry type system
 

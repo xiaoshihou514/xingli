@@ -4,7 +4,7 @@ import Data.Char (chr, ord)
 import Data.Map (Map, (!?))
 import Data.Map qualified as Map
 import Data.Maybe
-import Pretty
+import Typeclasses
 import Types.CurryTypes
 
 -- definition for Lambda calculus

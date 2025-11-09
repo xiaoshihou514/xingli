@@ -3,10 +3,11 @@
 module LCParserTest where
 
 import Expr.LC
-import Parser.LC
+import Parser.LC ()
 import TUtils
 import Test.Tasty
 import Test.Tasty.HUnit
+import Typeclasses
 
 lcParserTests :: TestTree
 lcParserTests =

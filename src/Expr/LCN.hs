@@ -3,16 +3,16 @@ module Expr.LCN where
 import Data.Map (Map, (!?))
 import Data.Map qualified as Map
 import Expr.LC hiding (Ab, Ap, V)
-import Pretty
+import Typeclasses
 import Types.CurryTypes
 
 -- Definition for Lambda calculus with names
 
-data LCTerm = V Char | Ab Char LCTerm | Ap LCTerm LCTerm | Name String
+data LCNTerm = V Char | Ab Char LCNTerm | Ap LCNTerm LCNTerm | Name String
   deriving (Eq, Show)
 
-instance Pretty LCTerm where
-  pretty :: LCTerm -> String
+instance Pretty LCNTerm where
+  pretty :: LCNTerm -> String
   pretty (V c) = [c]
   pretty (Ab c t) = ('\\' : c : '.' : '(' : pretty t) ++ ")"
   pretty (Ap f x) = pretty f ++ (' ' : pretty x)
@@ -20,12 +20,12 @@ instance Pretty LCTerm where
 
 data Def = Def
   { name :: String,
-    body :: LCTerm
+    body :: LCNTerm
   }
 
 data Program = Program
   { defs :: [Def],
-    main :: LCTerm
+    main :: LCNTerm
   }
 
 -- Definition for Env
@@ -45,7 +45,7 @@ ppln (Program defs main) = do
           (_, a) <- ppln' m Map.empty emptyEnv
           Map.insert name a <$> env
 
-    ppln' :: LCTerm -> Env -> TypeCtx -> Maybe PrincipalPair
+    ppln' :: LCNTerm -> Env -> TypeCtx -> Maybe PrincipalPair
     -- The only added case
     ppln' (Name n) e ctx = do
       ty <- e !? n
