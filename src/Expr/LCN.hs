@@ -22,11 +22,13 @@ data Def = Def
   { name :: String,
     body :: LCNTerm
   }
+  deriving (Eq, Show)
 
 data LCProgram = LCProgram
   { defs :: [Def],
     main :: LCNTerm
   }
+  deriving (Eq, Show)
 
 -- Definition for Env
 type Env = Map String CurryType

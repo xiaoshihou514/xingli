@@ -1,3 +1,4 @@
+import LCNParserTest
 import LCNTyperTest
 import LCParserTest
 import LCTyperTest
@@ -9,6 +10,7 @@ main =
     testGroup
       "All tests"
       [ lcParserTests,
+        lcnParserTests,
         curryTyperTests,
         lcnTests
       ]

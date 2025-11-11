@@ -3,10 +3,11 @@
 
 module Parser.LCN where
 
-import Expr.LCN
-import Typeclasses
+import Data.Char
 import Data.List
 import Data.Maybe
+import Expr.LCN
+import Typeclasses
 
 -- Parser for lambda calculus
 type Parser a = String -> (a, String)
@@ -20,11 +21,11 @@ instance FromPretty LCProgram where
       main = parseLCN mainln
 
       parseN :: String -> Def
-      parseN line = let
-        (name', rest) = break (== '=') line
-        name = init name'
-        body = parseLCN $ drop 1 rest
-        in Def name body
+      parseN line =
+        let (name', rest) = break (== '=') line
+            name = init name'
+            body = parseLCN $ drop 2 rest
+         in Def name body
 
 parseLCN :: String -> LCNTerm
 parseLCN input = case parse' id input of
@@ -52,11 +53,13 @@ parseLCN input = case parse' id input of
           (t'', ')' : cs'') -> (t'', cs'')
           _ -> error "Unclosed paren"
         t' = f t
-    parse' f (c : cs) = case cs of
-      ' ' : cs' ->
-        let (t', cs'') = parse' (Ap v) cs'
-         in (t', cs'')
-      _ -> (v, cs)
+    parse' f cs = case cs' of
+      ' ' : cs'' ->
+        let (t', cs''') = parse' (Ap v) cs''
+         in (t', cs''')
+      _ -> (v, cs')
       where
-        v = f (V c)
-    parse' _ "" = error "Incomplete input"
+        (name, cs') = span isAlpha cs
+        v = case name of
+          [c] -> f (V c)
+          _ -> f (Name name)

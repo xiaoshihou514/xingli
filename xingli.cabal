@@ -41,6 +41,7 @@ test-suite xingli-test
     other-modules:
         TUtils,
         LCParserTest,
+        LCNParserTest,
         LCTyperTest,
         LCNTyperTest
     build-depends:
