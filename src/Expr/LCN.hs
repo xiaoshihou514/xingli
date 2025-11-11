@@ -23,7 +23,7 @@ data Def = Def
     body :: LCNTerm
   }
 
-data Program = Program
+data LCProgram = LCProgram
   { defs :: [Def],
     main :: LCNTerm
   }
@@ -32,8 +32,8 @@ data Program = Program
 type Env = Map String CurryType
 
 -- Principal pair algorithm (for Lambda calculus with names)
-ppln :: Program -> Maybe PrincipalPair
-ppln (Program defs main) = do
+ppln :: LCProgram -> Maybe PrincipalPair
+ppln (LCProgram defs main) = do
   env <- buildEnv defs
   ppln' main env emptyEnv
   where

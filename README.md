@@ -19,4 +19,4 @@ cabal run
 ## Credits
 
 - Steffen van Bakel and David Davies (For the theoretical stuff)
-- Jamie Willis (For the Haskell stuff and Parser.Applicative)
+- Jamie Willis (For the Haskell stuff)

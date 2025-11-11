@@ -27,10 +27,10 @@ variableTypeTests =
   testGroup
     "Variable Type Inference"
     [ testCase "type of single variable" $
-        ppln (Program [] (V 'x'))
+        ppln (LCProgram [] (V 'x'))
           --> Just (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Phi 'A'),
       testCase "type of another variable" $
-        ppln (Program [] (V 'y'))
+        ppln (LCProgram [] (V 'y'))
           --> Just (TypeCtx (Map.fromList [('y', Phi 'A')]) 'B', Phi 'A')
     ]
 
@@ -39,10 +39,10 @@ abstractionTypeTests =
   testGroup
     "Abstraction Type Inference"
     [ testCase "type of identity function" $
-        ppln (Program [] (Ab 'x' (V 'x')))
+        ppln (LCProgram [] (Ab 'x' (V 'x')))
           --> Just (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Arrow (Phi 'A') (Phi 'A')),
       testCase "type of constant function" $
-        ppln (Program [] (Ab 'x' (Ab 'y' (V 'x'))))
+        ppln (LCProgram [] (Ab 'x' (Ab 'y' (V 'x'))))
           --> Just
             ( TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C',
               Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
@@ -54,10 +54,10 @@ applicationTypeTests =
   testGroup
     "Application Type Inference"
     [ testCase "type of simple application" $
-        ppln (Program [] (Ap (V 'f') (V 'x')))
+        ppln (LCProgram [] (Ap (V 'f') (V 'x')))
           --> Just (TypeCtx (Map.fromList [('f', Arrow (Phi 'B') (Phi 'C')), ('x', Phi 'B')]) 'C', Phi 'C'),
       testCase "type of left-associative application" $
-        ppln (Program [] (Ap (Ap (V 'f') (V 'x')) (V 'y')))
+        ppln (LCProgram [] (Ap (Ap (V 'f') (V 'x')) (V 'y')))
           --> Just
             ( TypeCtx
                 ( Map.fromList
@@ -70,7 +70,7 @@ applicationTypeTests =
               Phi 'E'
             ),
       testCase "type of application with abstraction" $
-        ppln (Program [] (Ap (Ab 'x' (V 'x')) (V 'y')))
+        ppln (LCProgram [] (Ap (Ab 'x' (V 'x')) (V 'y')))
           --> Just (TypeCtx (Map.fromList [('x', Phi 'C'), ('y', Phi 'C')]) 'C', Phi 'C')
     ]
 
@@ -79,14 +79,14 @@ nameTypeTests =
   testGroup
     "Name Type Inference"
     [ testCase "type of simple named definition" $
-        ppln (Program [Def "id" (Ab 'x' (V 'x'))] (Name "id"))
+        ppln (LCProgram [Def "id" (Ab 'x' (V 'x'))] (Name "id"))
           --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'A') (Phi 'A')),
       testCase "type of named definition in application" $
-        ppln (Program [Def "id" (Ab 'x' (V 'x'))] (Ap (Name "id") (V 'y')))
+        ppln (LCProgram [Def "id" (Ab 'x' (V 'x'))] (Ap (Name "id") (V 'y')))
           --> Just (TypeCtx (Map.fromList [('y', Phi 'C')]) 'B', Phi 'C'),
       testCase "type of multiple named definitions" $
         ppln
-          ( Program
+          ( LCProgram
               [ Def "const" (Ab 'x' (Ab 'y' (V 'x'))),
                 Def "id" (Ab 'x' (V 'x'))
               ]
@@ -101,7 +101,7 @@ complexTypeTests =
     "Complex Expression Type Inference"
     [ testCase "type of S combinator" $
         let term = Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z')))))
-         in ppln (Program [] term)
+         in ppln (LCProgram [] term)
               --> Just
                 ( TypeCtx
                     ( Map.fromList
@@ -120,14 +120,14 @@ complexTypeTests =
                 ),
       testCase "type of K combinator" $
         let term = Ab 'x' (Ab 'y' (V 'x'))
-         in ppln (Program [] term)
+         in ppln (LCProgram [] term)
               --> Just
                 ( TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C',
                   Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
                 ),
       testCase "type of function composition" $
         let term = Ab 'f' (Ab 'g' (Ab 'x' (Ap (V 'f') (Ap (V 'g') (V 'x')))))
-         in ppln (Program [] term)
+         in ppln (LCProgram [] term)
               --> Just
                 ( TypeCtx
                     ( Map.fromList
@@ -149,24 +149,24 @@ complexTypeTests =
 programTypeTests :: TestTree
 programTypeTests =
   testGroup
-    "Program Type Inference"
+    "LCProgram Type Inference"
     [ testCase "type of program with recursive definition" $
         ppln
-          ( Program
+          ( LCProgram
               [Def "id" (Ab 'x' (V 'x'))]
               (Ap (Name "id") (Name "id"))
           )
           --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'B') (Phi 'B')),
       testCase "type of program with multiple uses of same definition" $
         ppln
-          ( Program
+          ( LCProgram
               [Def "const" (Ab 'x' (Ab 'y' (V 'x')))]
               (Ap (Ap (Name "const") (V 'a')) (V 'b'))
           )
           --> Just (TypeCtx (Map.fromList [('a', Phi 'F'), ('b', Phi 'E')]) 'C', Phi 'F'),
       testCase "type of nested program with definitions" $
         ppln
-          ( Program
+          ( LCProgram
               [ Def "id" (Ab 'x' (V 'x')),
                 Def "apply" (Ab 'f' (Ab 'x' (Ap (V 'f') (V 'x'))))
               ]

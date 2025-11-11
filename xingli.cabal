@@ -30,7 +30,6 @@ library
         Expr.LCNR
         Types.CurryTypes
         Parser.LC
-        Parser.Applicative
         Parser.LCN
         Typeclasses
 
