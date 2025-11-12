@@ -78,28 +78,28 @@ nameTests =
 programTests :: TestTree
 programTests =
   testGroup
-    "LCProgram Parsing"
+    "LCNProgram Parsing"
     [ testCase "parse program with single definition" $
         parse "id = \\x.(x)\nid"
-          --> LCProgram [Def "id" (Ab 'x' (V 'x'))] (Name "id"),
+          --> LCNProgram [Def "id" (Ab 'x' (V 'x'))] (Name "id"),
       testCase "parse program with multiple definitions" $
         parse "const = \\x.(\\y.(x))\nid = \\x.(x)\nconst id"
-          --> LCProgram
+          --> LCNProgram
             [ Def "const" (Ab 'x' (Ab 'y' (V 'x'))),
               Def "id" (Ab 'x' (V 'x'))
             ]
             (Ap (Name "const") (Name "id")),
       testCase "parse program with named main" $
         parse "identity = \\x.(x)\nidentity"
-          --> LCProgram [Def "identity" (Ab 'x' (V 'x'))] (Name "identity"),
+          --> LCNProgram [Def "identity" (Ab 'x' (V 'x'))] (Name "identity"),
       testCase "parse program with complex main" $
         parse "foo = \\x.(x x)\nfoo foo"
-          --> LCProgram
+          --> LCNProgram
             [Def "foo" (Ab 'x' (Ap (V 'x') (V 'x')))]
             (Ap (Name "foo") (Name "foo")),
       testCase "parse program without definitions" $
         parse "\\x.(x)"
-          --> LCProgram [] (Ab 'x' (V 'x'))
+          --> LCNProgram [] (Ab 'x' (V 'x'))
     ]
 
 complexTests :: TestTree
@@ -138,7 +138,7 @@ complexTests =
             (Ap (Ap (Name "cons") (V 'x')) (Name "xs")),
       testCase "parse complex program with definitions" $
         parse "compose = \\f.(\\g.(\\x.(f (g x))))\nid = \\x.(x)\ncompose id id"
-          --> LCProgram
+          --> LCNProgram
             [ Def "compose" (Ab 'f' (Ab 'g' (Ab 'x' (Ap (V 'f') (Ap (V 'g') (V 'x')))))),
               Def "id" (Ab 'x' (V 'x'))
             ]

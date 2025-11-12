@@ -14,163 +14,121 @@ lcnTests :: TestTree
 lcnTests =
   testGroup
     "LCN Type Inference Tests"
-    [ variableTypeTests,
-      abstractionTypeTests,
-      applicationTypeTests,
-      nameTypeTests,
-      complexTypeTests,
+    [ basicTypeTests,
+      definitionTypeTests,
+      complexDefinitionTests,
       programTypeTests
     ]
 
-variableTypeTests :: TestTree
-variableTypeTests =
+basicTypeTests :: TestTree
+basicTypeTests =
   testGroup
-    "Variable Type Inference"
-    [ testCase "type of single variable" $
-        ppln (LCProgram [] (V 'x'))
-          --> Just (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Phi 'A'),
-      testCase "type of another variable" $
-        ppln (LCProgram [] (V 'y'))
-          --> Just (TypeCtx (Map.fromList [('y', Phi 'A')]) 'B', Phi 'A')
-    ]
-
-abstractionTypeTests :: TestTree
-abstractionTypeTests =
-  testGroup
-    "Abstraction Type Inference"
-    [ testCase "type of identity function" $
-        ppln (LCProgram [] (Ab 'x' (V 'x')))
-          --> Just (TypeCtx (Map.fromList [('x', Phi 'A')]) 'B', Arrow (Phi 'A') (Phi 'A')),
-      testCase "type of constant function" $
-        ppln (LCProgram [] (Ab 'x' (Ab 'y' (V 'x'))))
-          --> Just
-            ( TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C',
-              Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
-            )
-    ]
-
-applicationTypeTests :: TestTree
-applicationTypeTests =
-  testGroup
-    "Application Type Inference"
-    [ testCase "type of simple application" $
-        ppln (LCProgram [] (Ap (V 'f') (V 'x')))
-          --> Just (TypeCtx (Map.fromList [('f', Arrow (Phi 'B') (Phi 'C')), ('x', Phi 'B')]) 'C', Phi 'C'),
-      testCase "type of left-associative application" $
-        ppln (LCProgram [] (Ap (Ap (V 'f') (V 'x')) (V 'y')))
-          --> Just
-            ( TypeCtx
-                ( Map.fromList
-                    [ ('f', Arrow (Phi 'B') (Arrow (Phi 'D') (Phi 'E'))),
-                      ('x', Phi 'B'),
-                      ('y', Phi 'D')
-                    ]
-                )
-                'F',
-              Phi 'E'
-            ),
-      testCase "type of application with abstraction" $
-        ppln (LCProgram [] (Ap (Ab 'x' (V 'x')) (V 'y')))
-          --> Just (TypeCtx (Map.fromList [('x', Phi 'C'), ('y', Phi 'C')]) 'C', Phi 'C')
-    ]
-
-nameTypeTests :: TestTree
-nameTypeTests =
-  testGroup
-    "Name Type Inference"
-    [ testCase "type of simple named definition" $
-        ppln (LCProgram [Def "id" (Ab 'x' (V 'x'))] (Name "id"))
+    "Basic Type Inference"
+    [ testCase "type of identity function with definition" $
+        ppln (LCNProgram [Def "id" (Ab 'x' (V 'x'))] (Name "id"))
           --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'A') (Phi 'A')),
-      testCase "type of named definition in application" $
-        ppln (LCProgram [Def "id" (Ab 'x' (V 'x'))] (Ap (Name "id") (V 'y')))
-          --> Just (TypeCtx (Map.fromList [('y', Phi 'C')]) 'B', Phi 'C'),
-      testCase "type of multiple named definitions" $
+      testCase "type of constant function with definition" $
+        ppln (LCNProgram [Def "const" (Ab 'x' (Ab 'y' (V 'x')))] (Name "const"))
+          --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))),
+      testCase "type of application using definition" $
+        ppln (LCNProgram [Def "id" (Ab 'x' (V 'x'))] (Ap (Name "id") (V 'y')))
+          --> Just (TypeCtx (Map.fromList [('y', Phi 'C')]) 'B', Phi 'C')
+    ]
+
+definitionTypeTests :: TestTree
+definitionTypeTests =
+  testGroup
+    "Definition Type Inference"
+    [ testCase "type of multiple independent definitions" $
         ppln
-          ( LCProgram
-              [ Def "const" (Ab 'x' (Ab 'y' (V 'x'))),
+          ( LCNProgram
+              [ Def "id" (Ab 'x' (V 'x')),
+                Def "const" (Ab 'x' (Ab 'y' (V 'x')))
+              ]
+              (Name "const")
+          )
+          --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))),
+      testCase "type of definition used in another definition" $
+        ppln
+          ( LCNProgram
+              [Def "id" (Ab 'x' (V 'x'))]
+              (Ap (Name "id") (V 'z'))
+          )
+          --> Just (TypeCtx (Map.fromList [('z', Phi 'C')]) 'D', Phi 'C')
+    ]
+
+complexDefinitionTests :: TestTree
+complexDefinitionTests =
+  testGroup
+    "Complex Definition Type Inference"
+    [ testCase "type of composition with definitions" $
+        ppln
+          ( LCNProgram
+              [ Def "compose" (Ab 'f' (Ab 'g' (Ab 'x' (Ap (V 'f') (Ap (V 'g') (V 'x')))))),
                 Def "id" (Ab 'x' (V 'x'))
               ]
-              (Ap (Name "const") (Name "id"))
+              (Ap (Ap (Name "compose") (Name "id")) (Name "id"))
           )
-          --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'B') (Arrow (Phi 'C') (Phi 'C')))
-    ]
-
-complexTypeTests :: TestTree
-complexTypeTests =
-  testGroup
-    "Complex Expression Type Inference"
-    [ testCase "type of S combinator" $
-        let term = Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z')))))
-         in ppln (LCProgram [] term)
-              --> Just
-                ( TypeCtx
-                    ( Map.fromList
-                        [ ('x', Arrow (Phi 'E') (Arrow (Phi 'F') (Phi 'G'))),
-                          ('y', Arrow (Phi 'E') (Phi 'F')),
-                          ('z', Phi 'E')
-                        ]
-                    )
-                    'H',
-                  Arrow
-                    (Arrow (Phi 'E') (Arrow (Phi 'F') (Phi 'G')))
-                    ( Arrow
-                        (Arrow (Phi 'E') (Phi 'F'))
-                        (Arrow (Phi 'E') (Phi 'G'))
-                    )
-                ),
-      testCase "type of K combinator" $
-        let term = Ab 'x' (Ab 'y' (V 'x'))
-         in ppln (LCProgram [] term)
-              --> Just
-                ( TypeCtx (Map.fromList [('x', Phi 'A'), ('y', Phi 'B')]) 'C',
-                  Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'A'))
-                ),
-      testCase "type of function composition" $
-        let term = Ab 'f' (Ab 'g' (Ab 'x' (Ap (V 'f') (Ap (V 'g') (V 'x')))))
-         in ppln (LCProgram [] term)
-              --> Just
-                ( TypeCtx
-                    ( Map.fromList
-                        [ ('f', Arrow (Phi 'D') (Phi 'E')),
-                          ('g', Arrow (Phi 'C') (Phi 'D')),
-                          ('x', Phi 'C')
-                        ]
-                    )
-                    'F',
-                  Arrow
-                    (Arrow (Phi 'D') (Phi 'E'))
-                    ( Arrow
-                        (Arrow (Phi 'C') (Phi 'D'))
-                        (Arrow (Phi 'C') (Phi 'E'))
-                    )
+          --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'F') (Phi 'F')),
+      testCase "type of S combinator with definitions" $
+        ppln
+          ( LCNProgram
+              [ Def "s" (Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z'))))))
+              ]
+              (Name "s")
+          )
+          --> Just
+            ( TypeCtx Map.empty 'A',
+              Arrow
+                (Arrow (Phi 'A') (Arrow (Phi 'B') (Phi 'C')))
+                ( Arrow
+                    (Arrow (Phi 'A') (Phi 'B'))
+                    (Arrow (Phi 'A') (Phi 'C'))
                 )
+            )
     ]
 
 programTypeTests :: TestTree
 programTypeTests =
   testGroup
-    "LCProgram Type Inference"
-    [ testCase "type of program with recursive definition" $
+    "Complete LCNProgram Type Inference"
+    [ testCase "type of complete functional program" $
+        ( fmap snd $
+            ppln
+              ( LCNProgram
+                  [ Def "true" (Ab 'x' (Ab 'y' (V 'x'))), -- A -> B -> A
+                    Def "false" (Ab 'x' (Ab 'y' (V 'y'))), -- A -> B -> B
+                    Def "if" (Ab 'p' (Ab 'a' (Ab 'b' (Ap (Ap (V 'p') (V 'a')) (V 'b'))))) -- (A -> B -> C) -> A -> B -> C
+                  ]
+                  $ Ap
+                    (Ab 'b' (Ap (Ap (Ap (Name "if") (V 'b')) (Name "false")) (Name "true")))
+                    (Name "true")
+              )
+        )
+          --> Just (Arrow (Phi 'F') (Arrow (Phi 'G') (Phi 'G'))),
+      testCase "type of church numeral program" $
         ppln
-          ( LCProgram
-              [Def "id" (Ab 'x' (V 'x'))]
-              (Ap (Name "id") (Name "id"))
-          )
-          --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'B') (Phi 'B')),
-      testCase "type of program with multiple uses of same definition" $
-        ppln
-          ( LCProgram
-              [Def "const" (Ab 'x' (Ab 'y' (V 'x')))]
-              (Ap (Ap (Name "const") (V 'a')) (V 'b'))
-          )
-          --> Just (TypeCtx (Map.fromList [('a', Phi 'F'), ('b', Phi 'E')]) 'C', Phi 'F'),
-      testCase "type of nested program with definitions" $
-        ppln
-          ( LCProgram
-              [ Def "id" (Ab 'x' (V 'x')),
-                Def "apply" (Ab 'f' (Ab 'x' (Ap (V 'f') (V 'x'))))
+          ( LCNProgram
+              [ Def "zero" (Ab 'f' (Ab 'x' (V 'x'))),
+                Def "succ" (Ab 'n' (Ab 'f' (Ab 'x' (Ap (V 'f') (Ap (Ap (V 'n') (V 'f')) (V 'x')))))),
+                Def "plus" (Ab 'm' (Ab 'n' (Ab 'f' (Ab 'x' (Ap (Ap (V 'm') (V 'f')) (Ap (Ap (V 'n') (V 'f')) (V 'x')))))))
               ]
-              (Ap (Ap (Name "apply") (Name "id")) (V 'z'))
+              (Ap (Ap (Name "plus") (Name "zero")) (Ap (Name "succ") (Name "zero")))
           )
-          --> Just (TypeCtx (Map.fromList [('z', Phi 'F')]) 'B', Phi 'F')
+          --> Just
+            ( TypeCtx Map.empty 'A',
+              Arrow
+                (Arrow (Phi 'L') (Phi 'I'))
+                (Arrow (Phi 'L') (Phi 'I'))
+            ),
+      testCase "type of complex program with mixed definitions" $
+        ppln
+          ( LCNProgram
+              [ Def "id" (Ab 'x' (V 'x')),
+                Def "apply" (Ab 'f' (Ab 'x' (Ap (V 'f') (V 'x')))),
+                Def "compose" (Ab 'f' (Ab 'g' (Ab 'x' (Ap (V 'f') (Ap (V 'g') (V 'x'))))))
+              ]
+              (Ap (Ap (Name "compose") (Name "id")) (Name "id"))
+          )
+          --> Just (TypeCtx Map.empty 'A', Arrow (Phi 'F') (Phi 'F'))
     ]

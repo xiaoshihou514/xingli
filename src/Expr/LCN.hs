@@ -8,7 +8,11 @@ import Types.CurryTypes
 
 -- Definition for Lambda calculus with names
 
-data LCNTerm = V Char | Ab Char LCNTerm | Ap LCNTerm LCNTerm | Name String
+data LCNTerm
+  = V Char
+  | Ab Char LCNTerm
+  | Ap LCNTerm LCNTerm
+  | Name String
   deriving (Eq, Show)
 
 instance Pretty LCNTerm where
@@ -24,7 +28,7 @@ data Def = Def
   }
   deriving (Eq, Show)
 
-data LCProgram = LCProgram
+data LCNProgram = LCNProgram
   { defs :: [Def],
     main :: LCNTerm
   }
@@ -34,8 +38,8 @@ data LCProgram = LCProgram
 type Env = Map String CurryType
 
 -- Principal pair algorithm (for Lambda calculus with names)
-ppln :: LCProgram -> Maybe PrincipalPair
-ppln (LCProgram defs main) = do
+ppln :: LCNProgram -> Maybe PrincipalPair
+ppln (LCNProgram defs main) = do
   env <- buildEnv defs
   ppln' main env emptyEnv
   where

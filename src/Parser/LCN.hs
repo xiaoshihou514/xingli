@@ -12,9 +12,9 @@ import Typeclasses
 -- Parser for lambda calculus
 type Parser a = String -> (a, String)
 
-instance FromPretty LCProgram where
-  parse :: String -> LCProgram
-  parse input = LCProgram defs main
+instance FromPretty LCNProgram where
+  parse :: String -> LCNProgram
+  parse input = LCNProgram defs main
     where
       (deflns, mainln) = fromJust $ unsnoc $ lines input
       defs = map parseN deflns
