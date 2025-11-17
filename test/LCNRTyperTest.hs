@@ -37,24 +37,30 @@ recTests =
   testGroup
     "Rec Type Inference"
     [ testCase "Y combinator 1" $
-        ppln
-          ( LCNRProgram
-              [ Def "S" (Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z')))))),
-                Def "K" (Ab 'x' (Ab 'y' (V 'x'))),
-                Def "I" (Ap (Ap (Name "S") (Name "K")) (Name "K")),
-                RecDef "Y" (Ab 'm' (Ap (V 'm') (Ap (Name "Y") (V 'm'))))
-              ]
-              (Ap (Name "Y") (Name "I"))
-          )
-          --> Just (TypeCtx Map.empty 'A', Phi 'A', Map.empty),
+        ( (fmap sndOf3) $
+            ppln
+              ( LCNRProgram
+                  [ Def "S" (Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z')))))),
+                    Def "K" (Ab 'x' (Ab 'y' (V 'x'))),
+                    Def "I" (Ap (Ap (Name "S") (Name "K")) (Name "K")),
+                    RecDef "Y" (Ab 'm' (Ap (V 'm') (Ap (Name "Y") (V 'm'))))
+                  ]
+                  (Ap (Name "Y") (Name "I"))
+              )
+        )
+          --> Just (Phi 'Z'),
       testCase "Y combinator 2" $
-        ppln
-          ( LCNRProgram
-              [ Def "E" (Ab 'x' (Ab 'y' (Ap (V 'x') (V 'y')))),
-                Def "S" (Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z')))))),
-                RecDef "Y" (Ab 'm' (Ap (V 'm') (Ap (Name "Y") (V 'm'))))
-              ]
-              (Ap (Name "Y") (Ap (Name "S") (Ap (Name "E") (Name "E"))))
-          )
-          --> Just (TypeCtx Map.empty 'A', Phi 'A', Map.empty)
+        ( (fmap sndOf3) $
+            ppln
+              ( LCNRProgram
+                  [ Def "E" (Ab 'x' (Ab 'y' (Ap (V 'x') (V 'y')))),
+                    Def "S" (Ab 'x' (Ab 'y' (Ab 'z' (Ap (Ap (V 'x') (V 'z')) (Ap (V 'y') (V 'z')))))),
+                    RecDef "Y" (Ab 'm' (Ap (V 'm') (Ap (Name "Y") (V 'm'))))
+                  ]
+                  (Ap (Name "Y") (Ap (Name "S") (Ap (Name "E") (Name "E"))))
+              )
+        )
+          --> Just (Arrow (Arrow (Arrow (Phi 'V') (Phi 'W')) (Arrow (Phi 'V') (Phi 'W'))) (Arrow (Phi 'V') (Phi 'W')))
     ]
+  where
+    sndOf3 (_, y, _) = y

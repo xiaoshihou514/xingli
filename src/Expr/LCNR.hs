@@ -119,7 +119,7 @@ ppln (LCNRProgram defs main) = do
   ppln' main env context'
   where
     buildEnv :: TypeCtx -> [Def] -> Maybe (TypeCtx, Env)
-    buildEnv c = foldr buildEnv' $ Just (c, emptyEnv)
+    buildEnv c = foldl (flip buildEnv') $ Just (c, emptyEnv)
       where
         buildEnv' :: Def -> Maybe (TypeCtx, Env) -> Maybe (TypeCtx, Env)
         buildEnv' (Def name m) macc = do
