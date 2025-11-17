@@ -1,8 +1,9 @@
-module Expr.LCN where
+module Expr.LCN (LCNTerm (..), Def (..), LCNProgram (..), TypeCtx (..), ppln) where
 
+import Data.Char
 import Data.Map (Map, (!?))
 import Data.Map qualified as Map
-import Expr.LC hiding (Ab, Ap, V)
+import Data.Maybe
 import Typeclasses
 import Types.CurryTypes
 
@@ -33,6 +34,55 @@ data LCNProgram = LCNProgram
     main :: LCNTerm
   }
   deriving (Eq, Show)
+
+-- Code for deriving Curry type of a LCN term
+
+-- The label state for making fresh type labels
+type Label = Char
+
+fresh :: Label -> Label
+fresh = chr . (+ 1) . ord
+
+-- The context for the principal pair algorithm
+data TypeCtx = TypeCtx
+  { env :: Map Char CurryType,
+    label :: Label
+  }
+
+emptyEnv :: TypeCtx
+emptyEnv = TypeCtx Map.empty 'A'
+
+union :: TypeCtx -> TypeCtx -> TypeCtx
+union (TypeCtx envl ll) (TypeCtx envr lr) =
+  TypeCtx (Map.union envl envr) (chr (max (ord ll) (ord lr)))
+
+next :: TypeCtx -> (CurryType, TypeCtx)
+next (TypeCtx env l) = let l' = fresh l in (Phi l, TypeCtx env l')
+
+add :: Char -> CurryType -> TypeCtx -> TypeCtx
+add c ty (TypeCtx env l) = TypeCtx (Map.insert c ty env) l
+
+apply :: (CurryType -> CurryType) -> TypeCtx -> TypeCtx
+apply f (TypeCtx env l) = TypeCtx (Map.map f env) l
+
+instance Pretty TypeCtx where
+  pretty (TypeCtx env _)
+    | null env = "[]"
+    | otherwise =
+        let show' (v, ty) = [v] ++ ": " ++ pretty ty
+         in unlines $ map show' $ Map.toList env
+
+instance Show TypeCtx where -- needed for tests
+  show = pretty
+
+instance Eq TypeCtx where -- ignore label state
+  ctx1 == ctx2 = env ctx1 == env ctx2
+
+type PrincipalPair = (TypeCtx, CurryType)
+
+instance Pretty PrincipalPair where
+  pretty :: (TypeCtx, CurryType) -> String
+  pretty (ctx, ty) = "env:\n" ++ pretty ctx ++ "\n" ++ pretty ty
 
 -- Definition for Env
 type Env = Map String CurryType
@@ -90,3 +140,36 @@ ppln (LCNProgram defs main) = do
           where
             ((ctx', tyl), env') = freshInstance' env ctx left
             ((ctx'', tyr), env'') = freshInstance' env' ctx' right
+
+    liftPP :: (CurryType -> CurryType) -> (PrincipalPair -> PrincipalPair)
+    liftPP f (TypeCtx env l, a) = (TypeCtx (Map.map f env) l, f a)
+
+    unify :: CurryType -> CurryType -> Maybe (CurryType -> CurryType)
+    unify left right
+      | (Phi p1) <- left, (Phi p2) <- right, p1 == p2 = Just id
+      | (Phi p) <- left,
+        p `notOccur` right =
+          let subst ty = case ty of
+                Phi _ -> if ty == left then right else ty
+                Arrow a b -> Arrow (subst a) (subst b)
+           in Just subst
+      | (Phi _) <- right = unify right left
+      | (Arrow a b) <- left,
+        (Arrow c d) <- right =
+          do
+            s1 <- unify a c
+            s2 <- unify (s1 b) (s1 d)
+            return $ s2 . s1
+      | otherwise = Nothing
+      where
+        notOccur :: Label -> CurryType -> Bool
+        notOccur p (Phi a) = p /= a
+        notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
+
+    unifyctx :: TypeCtx -> TypeCtx -> Maybe (PrincipalPair -> PrincipalPair)
+    unifyctx ctx1 ctx2 = liftPP . foldr (.) id <$> sequence subs
+      where
+        subs :: [Maybe (CurryType -> CurryType)]
+        subs = [unify a b | (x, a) <- Map.toList env1, b <- maybeToList $ Map.lookup x env2]
+        env1 = env ctx1
+        env2 = env ctx2

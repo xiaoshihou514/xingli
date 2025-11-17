@@ -3,7 +3,6 @@
 module LCNTyperTest where
 
 import Data.Map qualified as Map
-import Expr.LC (TypeCtx (..))
 import Expr.LCN
 import TUtils
 import Test.Tasty
