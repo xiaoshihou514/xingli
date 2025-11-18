@@ -29,6 +29,7 @@ library
         Expr.LCN
         Expr.LCNR
         Types.CurryTypes
+        Types.ML
         Parser.LC
         Parser.LCN
         Parser.LCNR
