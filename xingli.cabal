@@ -31,6 +31,7 @@ library
         Types.CurryTypes
         Parser.LC
         Parser.LCN
+        Parser.LCNR
         Typeclasses
 
 test-suite xingli-test
@@ -42,6 +43,7 @@ test-suite xingli-test
         TUtils,
         LCParserTest,
         LCNParserTest,
+        LCNRParserTest,
         LCTyperTest,
         LCNTyperTest,
         LCNRTyperTest

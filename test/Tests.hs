@@ -1,4 +1,5 @@
 import LCNParserTest
+import LCNRParserTest
 import LCNRTyperTest
 import LCNTyperTest
 import LCParserTest
@@ -12,6 +13,7 @@ main =
       "All tests"
       [ lcParserTests,
         lcnParserTests,
+        lcnrParserTests,
         curryTyperTests,
         lcnTests,
         lcnrTests
