@@ -61,7 +61,7 @@ emptyCtx = TypeCtx Map.empty 'A'
 
 union :: TypeCtx -> TypeCtx -> TypeCtx
 union (TypeCtx envl ll) (TypeCtx envr lr) =
-  TypeCtx (Map.union envl envr) (chr (max (ord ll) (ord lr)))
+  TypeCtx (Map.union envl envr) (max ll lr)
 
 next :: TypeCtx -> (CurryType, TypeCtx)
 next (TypeCtx env l) = let l' = fresh l in (Phi l, TypeCtx env l')

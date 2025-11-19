@@ -28,6 +28,7 @@ library
         Expr.LC
         Expr.LCN
         Expr.LCNR
+        Expr.ML
         Types.CurryTypes
         Types.ML
         Parser.LC
