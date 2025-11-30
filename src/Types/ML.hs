@@ -4,13 +4,13 @@ import Typeclasses
 
 -- Definition for the ML type system
 
-data MLType = Phi Char | Forall Char | Basic String | Arrow MLType MLType
+data MLType = Phi Char | TyV Char | Basic String | Arrow MLType MLType
   deriving (Show, Eq)
 
 instance Pretty MLType where
   pretty :: MLType -> String
   pretty (Phi c) = [c]
-  pretty (Forall c) = ['∀', c]
+  pretty (TyV c) = ['∀', c]
   pretty (Basic s) = s
   pretty (Arrow a b) = left ++ " -> " ++ pretty b
     where

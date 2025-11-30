@@ -11,7 +11,7 @@ import Types.ML
 data MLTerm where
   V :: String -> MLTerm
   Const :: String -> MLTerm
-  Ab :: Char -> MLTerm -> MLTerm
+  Ab :: String -> MLTerm -> MLTerm
   Ap :: MLTerm -> MLTerm -> MLTerm
   Let :: (String, MLTerm) -> MLTerm -> MLTerm
   Fix :: String -> MLTerm -> MLTerm
@@ -21,7 +21,7 @@ instance Pretty MLTerm where
   pretty :: MLTerm -> String
   pretty (V s) = s
   pretty (Const s) = s
-  pretty (Ab c t) = ('\\' : c : '.' : '(' : pretty t) ++ ")"
+  pretty (Ab c t) = ("\\" ++ c ++ '.' : '(' : pretty t) ++ ")"
   pretty (Ap f x) = pretty f ++ (' ' : pretty x)
   pretty (Let (x, e1) e2) = "let " ++ x ++ " = " ++ pretty e1 ++ " in " ++ pretty e2
   pretty (Fix name e) = "fix " ++ name ++ "." ++ pretty e
@@ -35,7 +35,7 @@ fresh :: Label -> Label
 fresh = chr . (+ 1) . ord
 
 data TypeCtx = TypeCtx
-  { env :: Map Char MLType,
+  { env :: Map String MLType,
     tyLabel :: Label,
     varLabel :: Label
   }
@@ -51,9 +51,9 @@ nextTy :: TypeCtx -> (MLType, TypeCtx)
 nextTy (TypeCtx env tl vl) = let tl' = fresh tl in (Phi tl, TypeCtx env tl' vl)
 
 nextVar :: TypeCtx -> (MLType, TypeCtx)
-nextVar (TypeCtx env tl vl) = let vl' = fresh vl in (Forall tl, TypeCtx env tl vl')
+nextVar (TypeCtx env tl vl) = let vl' = fresh vl in (TyV tl, TypeCtx env tl vl')
 
-add :: Char -> MLType -> TypeCtx -> TypeCtx
+add :: String -> MLType -> TypeCtx -> TypeCtx
 add c ty (TypeCtx env tl vl) = TypeCtx (Map.insert c ty env) tl vl
 
 apply :: (MLType -> MLType) -> TypeCtx -> TypeCtx
@@ -63,7 +63,7 @@ instance Pretty TypeCtx where
   pretty (TypeCtx env _ _)
     | null env = "[]"
     | otherwise =
-        let show' (v, ty) = [v] ++ ": " ++ pretty ty
+        let show' (v, ty) = v ++ ": " ++ pretty ty
          in unlines $ map show' $ Map.toList env
 
 instance Show TypeCtx where -- needed for tests
@@ -74,14 +74,49 @@ type PrincipalPair = (MLType -> MLType, MLType)
 type Env = Map String MLType
 
 algorithmW :: Env -> MLTerm -> Maybe MLType
-algorithmW e t = snd . snd <$> algorithmW' emptyCtx e t
+algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
   where
-    algorithmW' :: TypeCtx -> Env -> MLTerm -> Maybe (TypeCtx, PrincipalPair)
-    algorithmW' ctx v (Const s) = do
+    algorithmW' :: TypeCtx -> MLTerm -> Maybe (TypeCtx, PrincipalPair)
+    algorithmW' ctx (Const s) = do
       a <- v !? s
       let (ctx', b) = freshInstance (ctx, a)
       return (ctx', (id, b))
-    algorithmW' _ _ _ = undefined
+    algorithmW' ctx (V c) =
+      let (a, ctx') = nextVar ctx
+       in Just (add c a ctx', (id, a))
+    algorithmW' ctx (Ab x e) = do
+      let (phi, ctx') = nextVar ctx
+      (ctx'', (s, a)) <- algorithmW' (add x phi ctx') e
+      return (ctx'', (s, s (phi --> a)))
+    algorithmW' ctx (Let (x, e1) e2) = do
+      (ctx', (s1, a)) <- algorithmW' ctx e1
+      let ctx'' = apply s1 ctx'
+      let sigma = generalize ctx'' a
+      (ctx''', (s2, b)) <- algorithmW' (add x sigma ctx'') e2
+      return (ctx''', (s2 . s1, b))
+    algorithmW' _ _ = undefined
 
     freshInstance :: (TypeCtx, MLType) -> (TypeCtx, MLType)
-    freshInstance = undefined
+    freshInstance = snd . freshInstance' Map.empty
+      where
+        freshInstance' ::
+          Map Char MLType ->
+          (TypeCtx, MLType) ->
+          (Map Char MLType, (TypeCtx, MLType))
+        freshInstance' env (ctx, Phi c) = case env !? c of
+          Just ty -> (env, (ctx, ty))
+          Nothing -> let (ty', ctx') = nextTy ctx in (Map.insert c ty' env, (ctx', ty'))
+        freshInstance' env (ctx, TyV c) = case env !? c of
+          Just ty -> (env, (ctx, ty))
+          Nothing -> let (ty', ctx') = nextVar ctx in (Map.insert c ty' env, (ctx', ty'))
+        freshInstance' env x@(_, Basic _) = (env, x)
+        freshInstance' env (ctx, Arrow left right) = (env'', (ctx'', tyl --> tyr))
+          where
+            (env', (ctx', tyl)) = freshInstance' env (ctx, left)
+            (env'', (ctx'', tyr)) = freshInstance' env' (ctx', right)
+
+    generalize :: TypeCtx -> MLType -> MLType
+    generalize ctx (Phi c) = case env ctx !? c of
+      Just ty -> undefined
+      Nothing -> undefined
+    generalize _ _ = undefined
