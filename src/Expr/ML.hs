@@ -3,6 +3,8 @@ module Expr.ML where
 import Data.Char (chr, ord)
 import Data.Map (Map, (!?))
 import Data.Map qualified as Map
+import Data.Set (Set, (\\))
+import Data.Set qualified as Set
 import Typeclasses
 import Types.ML
 
@@ -23,7 +25,8 @@ instance Pretty MLTerm where
   pretty (Const s) = s
   pretty (Ab c t) = ("\\" ++ c ++ '.' : '(' : pretty t) ++ ")"
   pretty (Ap f x) = pretty f ++ (' ' : pretty x)
-  pretty (Let (x, e1) e2) = "let " ++ x ++ " = " ++ pretty e1 ++ " in " ++ pretty e2
+  pretty (Let (x, e1) e2) =
+    "let " ++ x ++ " = " ++ pretty e1 ++ " in " ++ pretty e2
   pretty (Fix name e) = "fix " ++ name ++ "." ++ pretty e
 
 -- Code for Algorithm W
@@ -47,11 +50,8 @@ union :: TypeCtx -> TypeCtx -> TypeCtx
 union (TypeCtx envl ltl lvl) (TypeCtx envr rtl rvl) =
   TypeCtx (Map.union envl envr) (max ltl rtl) (max lvl rvl)
 
-nextTy :: TypeCtx -> (MLType, TypeCtx)
-nextTy (TypeCtx env tl vl) = let tl' = fresh tl in (Phi tl, TypeCtx env tl' vl)
-
-nextVar :: TypeCtx -> (MLType, TypeCtx)
-nextVar (TypeCtx env tl vl) = let vl' = fresh vl in (TyV tl, TypeCtx env tl vl')
+next :: TypeCtx -> (MLType, TypeCtx)
+next (TypeCtx env tl vl) = let tl' = fresh tl in (Phi tl, TypeCtx env tl' vl)
 
 add :: String -> MLType -> TypeCtx -> TypeCtx
 add c ty (TypeCtx env tl vl) = TypeCtx (Map.insert c ty env) tl vl
@@ -82,10 +82,10 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
       let (ctx', b) = freshInstance (ctx, a)
       return (ctx', (id, b))
     algorithmW' ctx (V c) =
-      let (a, ctx') = nextVar ctx
+      let (a, ctx') = next ctx
        in Just (add c a ctx', (id, a))
     algorithmW' ctx (Ab x e) = do
-      let (phi, ctx') = nextVar ctx
+      let (phi, ctx') = next ctx
       (ctx'', (s, a)) <- algorithmW' (add x phi ctx') e
       return (ctx'', (s, s (phi --> a)))
     algorithmW' ctx (Let (x, e1) e2) = do
@@ -96,6 +96,7 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
       return (ctx''', (s2 . s1, b))
     algorithmW' _ _ = undefined
 
+    -- In Expr.ML.hs
     freshInstance :: (TypeCtx, MLType) -> (TypeCtx, MLType)
     freshInstance = snd . freshInstance' Map.empty
       where
@@ -103,20 +104,40 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
           Map Char MLType ->
           (TypeCtx, MLType) ->
           (Map Char MLType, (TypeCtx, MLType))
-        freshInstance' env (ctx, Phi c) = case env !? c of
-          Just ty -> (env, (ctx, ty))
-          Nothing -> let (ty', ctx') = nextTy ctx in (Map.insert c ty' env, (ctx', ty'))
-        freshInstance' env (ctx, TyV c) = case env !? c of
-          Just ty -> (env, (ctx, ty))
-          Nothing -> let (ty', ctx') = nextVar ctx in (Map.insert c ty' env, (ctx', ty'))
-        freshInstance' env x@(_, Basic _) = (env, x)
-        freshInstance' env (ctx, Arrow left right) = (env'', (ctx'', tyl --> tyr))
-          where
-            (env', (ctx', tyl)) = freshInstance' env (ctx, left)
-            (env'', (ctx'', tyr)) = freshInstance' env' (ctx', right)
+        freshInstance' env (ctx, Qtf c ty) =
+          let (freshTy, ctx') = next ctx
+              env' = Map.insert c freshTy env
+           in freshInstance' env' (ctx', ty)
+        freshInstance' env (ctx, Phi c) =
+          case Map.lookup c env of
+            Just ty -> (env, (ctx, ty))
+            -- Free variable, no substitution
+            Nothing -> (env, (ctx, Phi c))
+        freshInstance' env (ctx, Arrow left right) =
+          let (env', (ctx', left')) = freshInstance' env (ctx, left)
+              (env'', (ctx'', right')) = freshInstance' env' (ctx', right)
+           in (env'', (ctx'', Arrow left' right'))
+        freshInstance' env x = (env, x)
 
+    -- Quantify all free type vars in ty that are quantified in ctx
     generalize :: TypeCtx -> MLType -> MLType
-    generalize ctx (Phi c) = case env ctx !? c of
-      Just ty -> undefined
-      Nothing -> undefined
-    generalize _ _ = undefined
+    -- let's gooooo
+    generalize ctx ty = Set.foldl (\f -> (f .) . Qtf) id (fvty \\ fvctx) ty
+      where
+        fvctx :: Set Char
+        fvctx = Set.unions $ map (free . snd) $ Map.toList (env ctx)
+
+        fvty :: Set Char
+        fvty = free ty
+
+        free :: MLType -> Set Char
+        free = free' Set.empty
+          where
+            free' :: Set Char -> MLType -> Set Char
+            -- top level
+            free' env (Qtf c t) = free' (Set.insert c env) t
+            free' env (Phi c)
+              | c `elem` env = Set.empty
+              | otherwise = Set.fromList [c]
+            free' env (Arrow l r) = Set.union (free' env l) (free' env r)
+            free' _ (Basic _) = Set.empty
