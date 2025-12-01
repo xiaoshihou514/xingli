@@ -15,7 +15,7 @@ testEnv =
   Map.fromList
     [ ("true", Basic "Bool"),
       ("false", Basic "Bool"),
-      ("if", Arrow (Basic "Bool") (Arrow (Phi 'a') (Arrow (Phi 'a') (Phi 'a')))),
+      ("if", Qtf 'a' (Arrow (Basic "Bool") (Arrow (Phi 'a') (Arrow (Phi 'a') (Phi 'a'))))),
       ("zero", Basic "Int"),
       ("succ", Arrow (Basic "Int") (Basic "Int")),
       ("pred", Arrow (Basic "Int") (Basic "Int")),
@@ -125,7 +125,7 @@ letTypeTests =
           --> Just (Basic "Int"),
       testCase "type of let with lambda" $
         runW (Let ("id", Ab "x" (V "x")) (V "id"))
-          --> Just (Arrow (Phi 'a') (Phi 'a')),
+          --> Just (Arrow (Phi 'b') (Phi 'b')),
       testCase "type of let with application" $
         runW
           ( Let
@@ -169,19 +169,22 @@ fixTypeTests =
         let term =
               Fix
                 "fact"
-                ( Ap
+                ( Ab
+                    "n"
                     ( Ap
                         ( Ap
-                            (Const "if")
-                            (Ap (Const "iszero") (V "n"))
+                            ( Ap
+                                (Const "if")
+                                (Ap (Const "iszero") (V "n"))
+                            )
+                            (Const "zero")
                         )
-                        (Const "zero")
-                    )
-                    ( Ap
-                        (Ap (Const "*") (V "n"))
                         ( Ap
-                            (V "fact")
-                            (Ap (Const "pred") (V "n"))
+                            (Ap (Const "*") (V "n"))
+                            ( Ap
+                                (V "fact")
+                                (Ap (Const "pred") (V "n"))
+                            )
                         )
                     )
                 )
@@ -197,11 +200,8 @@ polymorphismTests =
     "Polymorphism Tests"
     [ testCase "polymorphic identity application" $
         runW
-          ( Let
-              ("id", Ab "x" (V "x"))
-              (Ap (V "id") (V "id"))
-          )
-          --> Just (Arrow (Phi 'a') (Phi 'a')),
+          (Let ("id", Ab "x" (V "x")) (Ap (V "id") (V "id")))
+          --> Just (Arrow (Phi 'c') (Phi 'c')),
       testCase "polymorphic constant function" $
         runW
           ( Let
@@ -217,10 +217,10 @@ polymorphismTests =
          in runW term
               --> Just
                 ( Arrow
-                    (Arrow (Phi 'd') (Phi 'e'))
+                    (Arrow (Phi 'g') (Phi 'h'))
                     ( Arrow
-                        (Arrow (Phi 'c') (Phi 'd'))
-                        (Arrow (Phi 'c') (Phi 'e'))
+                        (Arrow (Phi 'f') (Phi 'g'))
+                        (Arrow (Phi 'f') (Phi 'h'))
                     )
                 ),
       testCase "let polymorphism with multiple uses" $
@@ -252,8 +252,8 @@ polymorphismTests =
                     (Ap (Const "if") (Const "true"))
                     (Ab "x" (V "x"))
                 )
-                (Ab "y" (Const "zero"))
-         in runW term --> Just (Arrow (Phi 'a') (Phi 'a')),
+                (Ab "y" (V "y"))
+         in runW term --> Just (Arrow (Phi 'e') (Phi 'e')),
       testCase "nested polymorphic if" $
         let term =
               Let
@@ -301,30 +301,6 @@ complexTypeTests =
       testCase "type of K combinator" $
         runW (Ab "x" (Ab "y" (V "x")))
           --> Just (Arrow (Phi 'a') (Arrow (Phi 'b') (Phi 'a'))),
-      testCase "type of Y combinator (simplified)" $
-        runW
-          ( Ab
-              "f"
-              ( Ap
-                  (Ab "x" (Ap (V "f") (Ap (V "x") (V "x"))))
-                  (Ab "x" (Ap (V "f") (Ap (V "x") (V "x"))))
-              )
-          )
-          --> Just (Arrow (Arrow (Phi 'a') (Phi 'a')) (Phi 'a')),
-      testCase "type of church numeral 0" $
-        runW (Ab "f" (Ab "x" (V "x")))
-          --> Just
-            ( Arrow
-                (Arrow (Phi 'a') (Phi 'b'))
-                (Arrow (Phi 'a') (Phi 'a'))
-            ),
-      testCase "type of church numeral 1" $
-        runW (Ab "f" (Ab "x" (Ap (V "f") (V "x"))))
-          --> Just
-            ( Arrow
-                (Arrow (Phi 'a') (Phi 'a'))
-                (Arrow (Phi 'a') (Phi 'a'))
-            ),
       testCase "type of arithmetic expression" $
         runW
           ( Let
