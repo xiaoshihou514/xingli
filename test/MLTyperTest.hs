@@ -15,6 +15,7 @@ testEnv =
   Map.fromList
     [ ("true", Basic "Bool"),
       ("false", Basic "Bool"),
+      ("if", Arrow (Basic "Bool") (Arrow (Phi 'a') (Arrow (Phi 'a') (Phi 'a')))),
       ("zero", Basic "Int"),
       ("succ", Arrow (Basic "Int") (Basic "Int")),
       ("pred", Arrow (Basic "Int") (Basic "Int")),
@@ -168,19 +169,19 @@ fixTypeTests =
         let term =
               Fix
                 "fact"
-                ( Ab
-                    "n"
+                ( Ap
                     ( Ap
                         ( Ap
+                            (Const "if")
                             (Ap (Const "iszero") (V "n"))
-                            (Const "zero")
                         )
+                        (Const "zero")
+                    )
+                    ( Ap
+                        (Ap (Const "*") (V "n"))
                         ( Ap
-                            (Ap (Const "*") (V "n"))
-                            ( Ap
-                                (V "fact")
-                                (Ap (Const "pred") (V "n"))
-                            )
+                            (V "fact")
+                            (Ap (Const "pred") (V "n"))
                         )
                     )
                 )
@@ -234,7 +235,40 @@ polymorphismTests =
                   (Ap (V "f") (Const "false"))
               )
           )
-          --> Just (Basic "Bool")
+          --> Just (Basic "Bool"),
+      testCase "polymorphic if in environment" $
+        runW (Ap (Ap (Ap (Const "if") (Const "true")) (Const "zero")) (Ap (Const "succ") (Const "zero")))
+          --> Just (Basic "Int"),
+      testCase "polymorphic if with different types" $
+        let term =
+              Let
+                ("cond", Const "true")
+                (Ap (Ap (Ap (Const "if") (V "cond")) (Const "zero")) (Const "false"))
+         in runW term --> Nothing, -- 应该失败，因为分支类型不一致
+      testCase "polymorphic if with identity function" $
+        let term =
+              Ap
+                ( Ap
+                    (Ap (Const "if") (Const "true"))
+                    (Ab "x" (V "x"))
+                )
+                (Ab "y" (Const "zero"))
+         in runW term --> Just (Arrow (Phi 'a') (Phi 'a')),
+      testCase "nested polymorphic if" $
+        let term =
+              Let
+                ("id", Ab "x" (V "x"))
+                ( Ap
+                    ( Ap
+                        ( Ap
+                            (Const "if")
+                            (Ap (Ap (Const "and") (Const "true")) (Const "false"))
+                        )
+                        (V "id")
+                    )
+                    (Const "succ")
+                )
+         in runW term --> Just (Arrow (Basic "Int") (Basic "Int"))
     ]
 
 complexTypeTests :: TestTree
