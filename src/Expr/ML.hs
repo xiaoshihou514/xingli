@@ -39,28 +39,27 @@ fresh = chr . (+ 1) . ord
 
 data TypeCtx = TypeCtx
   { env :: Map String MLType,
-    tyLabel :: Label,
-    varLabel :: Label
+    tyLabel :: Label
   }
 
 emptyCtx :: TypeCtx
-emptyCtx = TypeCtx Map.empty 'A' 'a'
+emptyCtx = TypeCtx Map.empty 'a'
 
 union :: TypeCtx -> TypeCtx -> TypeCtx
-union (TypeCtx envl ltl lvl) (TypeCtx envr rtl rvl) =
-  TypeCtx (Map.union envl envr) (max ltl rtl) (max lvl rvl)
+union (TypeCtx envl ll) (TypeCtx envr lr) =
+  TypeCtx (Map.union envl envr) (max ll lr)
 
 next :: TypeCtx -> (MLType, TypeCtx)
-next (TypeCtx env tl vl) = let tl' = fresh tl in (Phi tl, TypeCtx env tl' vl)
+next (TypeCtx env l) = let l' = fresh l in (Phi l, TypeCtx env l')
 
 add :: String -> MLType -> TypeCtx -> TypeCtx
-add c ty (TypeCtx env tl vl) = TypeCtx (Map.insert c ty env) tl vl
+add c ty (TypeCtx env l) = TypeCtx (Map.insert c ty env) l
 
 apply :: (MLType -> MLType) -> TypeCtx -> TypeCtx
-apply f (TypeCtx env tl vl) = TypeCtx (Map.map f env) tl vl
+apply f (TypeCtx env l) = TypeCtx (Map.map f env) l
 
 instance Pretty TypeCtx where
-  pretty (TypeCtx env _ _)
+  pretty (TypeCtx env _)
     | null env = "[]"
     | otherwise =
         let show' (v, ty) = v ++ ": " ++ pretty ty
@@ -81,9 +80,10 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
       a <- v !? s
       let (ctx', b) = freshInstance (ctx, a)
       return (ctx', (id, b))
-    algorithmW' ctx (V c) =
-      let (a, ctx') = next ctx
-       in Just (add c a ctx', (id, a))
+    algorithmW' ctx (V c) = do
+      a <- env ctx !? c
+      let (ctx', b) = freshInstance (ctx, a)
+      return (ctx', (id, b))
     algorithmW' ctx (Ab x e) = do
       let (phi, ctx') = next ctx
       (ctx'', (s, a)) <- algorithmW' (add x phi ctx') e
@@ -94,7 +94,17 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
       let sigma = generalize ctx'' a
       (ctx''', (s2, b)) <- algorithmW' (add x sigma ctx'') e2
       return (ctx''', (s2 . s1, b))
-    algorithmW' _ _ = undefined
+    algorithmW' ctx (Fix g e) = do
+      let (phi, ctx') = next ctx
+      (ctx'', (s1, a)) <- algorithmW' (add g phi ctx') e
+      s2 <- unify (s1 phi) a
+      return (ctx'', (s2 . s1, s2 a))
+    algorithmW' ctx (Ap e1 e2) = do
+      (ctx', (s1, a)) <- algorithmW' ctx e1
+      (ctx'', (s2, b)) <- algorithmW' (apply s1 ctx') e2
+      let (phi, ctx''') = next ctx''
+      s3 <- unify (s2 a) (b --> phi)
+      return (ctx''', (s3 . s2 . s1, s3 phi))
 
     -- In Expr.ML.hs
     freshInstance :: (TypeCtx, MLType) -> (TypeCtx, MLType)
@@ -141,3 +151,34 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
               | otherwise = Set.fromList [c]
             free' env (Arrow l r) = Set.union (free' env l) (free' env r)
             free' _ (Basic _) = Set.empty
+
+    unify :: MLType -> MLType -> Maybe (MLType -> MLType)
+    unify left right
+      -- same as in LC*
+      | (Phi p1) <- left, (Phi p2) <- right, p1 == p2 = Just id
+      -- merged with ML ty unify
+      | (Phi p) <- left,
+        p `notOccur` right =
+          let subst ty = case ty of
+                Phi _ -> if ty == left then right else ty
+                Arrow a b -> Arrow (subst a) (subst b)
+                Qtf c ty' -> if p /= c then Qtf c (subst ty') else ty
+                _ -> ty
+           in Just subst
+      | (Arrow a b) <- left,
+        (Arrow c d) <- right =
+          do
+            s1 <- unify a c
+            s2 <- unify (s1 b) (s1 d)
+            return $ s2 . s1
+      -- added case
+      | (Basic c1) <- left, (Basic c2) <- right, c1 == c2 = Just id
+      -- merged with ML ty unify
+      | (Phi _) <- right = unify right left
+      | otherwise = Nothing
+      where
+        notOccur :: Label -> MLType -> Bool
+        notOccur p (Phi a) = p /= a
+        notOccur _ (Basic _) = False
+        notOccur p (Qtf _ a) = p `notOccur` a
+        notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
