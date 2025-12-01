@@ -48,7 +48,8 @@ test-suite xingli-test
         LCNRParserTest,
         LCTyperTest,
         LCNTyperTest,
-        LCNRTyperTest
+        LCNRTyperTest,
+        MLTyperTest
     build-depends:
         xingli,
         tasty,

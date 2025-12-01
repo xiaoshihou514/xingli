@@ -4,6 +4,7 @@ import LCNRTyperTest
 import LCNTyperTest
 import LCParserTest
 import LCTyperTest
+import MLTyperTest
 import Test.Tasty
 
 main :: IO ()
@@ -14,6 +15,7 @@ main =
       [ lcParserTests,
         lcnParserTests,
         lcnrParserTests,
+        mlTyperTests,
         curryTyperTests,
         lcnTests,
         lcnrTests
