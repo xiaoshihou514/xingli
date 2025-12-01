@@ -179,6 +179,6 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
       where
         notOccur :: Label -> MLType -> Bool
         notOccur p (Phi a) = p /= a
-        notOccur _ (Basic _) = False
+        notOccur _ (Basic _) = True
         notOccur p (Qtf _ a) = p `notOccur` a
         notOccur p (Arrow a b) = p `notOccur` a && p `notOccur` b
