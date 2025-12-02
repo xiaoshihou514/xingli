@@ -5,7 +5,6 @@ import Data.Map (Map, (!?))
 import Data.Map qualified as Map
 import Data.Set (Set, (\\))
 import Data.Set qualified as Set
-import Debug.Trace
 import Typeclasses
 import Types.ML
 
@@ -94,10 +93,6 @@ algorithmW v term_ = snd . snd <$> algorithmW' emptyCtx term_
       let (TypeCtx mapping _) = apply s1 ctx
       let ctx'' = TypeCtx mapping l
       let sigma = generalize ctx'' a
-      -- _ <- traceM (show ctx'')
-      -- _ <- traceM (show (tyLabel ctx''))
-      -- _ <- traceM (pretty a)
-      -- _ <- traceM (pretty sigma)
       (ctx''', (s2, b)) <- algorithmW' (add x sigma ctx'') e2
       return (ctx''', (s2 . s1, b))
     algorithmW' ctx (Fix g e) = do
