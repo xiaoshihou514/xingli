@@ -4,6 +4,7 @@ import LCNRTyperTest
 import LCNTyperTest
 import LCParserTest
 import LCTyperTest
+import MLParserTest
 import MLTyperTest
 import Test.Tasty
 
@@ -15,6 +16,7 @@ main =
       [ lcParserTests,
         lcnParserTests,
         lcnrParserTests,
+        mlParserTests,
         mlTyperTests,
         curryTyperTests,
         lcnTests,
