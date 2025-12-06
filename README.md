@@ -7,6 +7,15 @@ Accompanying blog post:
 - $\Lambda_N$ and $\Lambda_{NR}$: https://xiaoshihou514.github.io/blogs/2025-11-18.html
 - ML: https://xiaoshihou514.github.io/blogs/2025-12-2.html
 
+型理（类型之理）是一个教学用λ演算类型推导器，支持基本柯里类型, $\Lambda_N$, $\Lambda_{NR}$, ML类型。
+
+相关博客文章：
+
+- 基础柯里类型（上）：https://xiaoshihou514.github.io/zh/blogs/2025-11-3.html
+- 基础柯里类型（下）：https://xiaoshihou514.github.io/zh/blogs/2025-11-8.html
+- 赋值和递归篇：https://xiaoshihou514.github.io/zh/blogs/2025-11-18.html
+- ML类型：https://xiaoshihou514.github.io/zh/blogs/2025-12-2.html
+
 ```
 $ cabal run
 xingli - educational lambda calculus typer
@@ -21,15 +30,6 @@ Available options:
   --lang language          Language (lc, lcn, lcnr, ml)
   -h,--help                Show this help text
 ```
-
-型理（类型之理）是一个教学用λ演算类型推导器，支持基本柯里类型, $\Lambda_N$, $\Lambda_{NR}$, ML类型。
-
-相关博客文章：
-
-- 基础柯里类型（上）：https://xiaoshihou514.github.io/zh/blogs/2025-11-3.html
-- 基础柯里类型（下）：https://xiaoshihou514.github.io/zh/blogs/2025-11-8.html
-- 赋值和递归篇：https://xiaoshihou514.github.io/zh/blogs/2025-11-18.html
-- ML类型：https://xiaoshihou514.github.io/zh/blogs/2025-12-2.html
 
 ```
 $ cabal run
