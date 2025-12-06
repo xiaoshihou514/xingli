@@ -7,6 +7,21 @@ Accompanying blog post:
 - $\Lambda_N$ and $\Lambda_{NR}$: https://xiaoshihou514.github.io/blogs/2025-11-18.html
 - ML: https://xiaoshihou514.github.io/blogs/2025-12-2.html
 
+```
+$ cabal run
+xingli - educational lambda calculus typer
+
+Usage: xingli ((-f|--file FILENAME) | --stdin) [--lang language]
+
+  Type LC, LCN, LCNR or ML
+
+Available options:
+  -f,--file FILENAME       Input file
+  --stdin                  Read from stdin
+  --lang language          Language (lc, lcn, lcnr, ml)
+  -h,--help                Show this help text
+```
+
 型理（类型之理）是一个教学用λ演算类型推导器，支持基本柯里类型, $\Lambda_N$, $\Lambda_{NR}$, ML类型。
 
 相关博客文章：
@@ -16,8 +31,19 @@ Accompanying blog post:
 - 赋值和递归篇：https://xiaoshihou514.github.io/zh/blogs/2025-11-18.html
 - ML类型：https://xiaoshihou514.github.io/zh/blogs/2025-12-2.html
 
-```haskell
-cabal run
+```
+$ cabal run
+型理 - 教学用λ演算类型推导器
+
+Usage: xingli ((-f|--file 文件名) | --stdin) [--lang 语言]
+
+  选择表达式的语言
+
+Available options:
+  -f,--file 文件名            输入文件
+  --stdin                  使用标准输入
+  --lang 语言                语言（LC, LCN, LCNR, ML）
+  -h,--help                Show this help text
 ```
 
 **Credits**

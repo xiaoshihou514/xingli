@@ -20,8 +20,11 @@ executable xingli
     import:           base
     main-is:          Main.hs
     hs-source-dirs:   app
+    build-depends:
+        optparse-applicative,
+        xingli-lib
 
-library
+library xingli-lib
     import:           base
     hs-source-dirs:   src
     exposed-modules:
@@ -53,6 +56,6 @@ test-suite xingli-test
         LCNRTyperTest,
         MLTyperTest
     build-depends:
-        xingli,
+        xingli-lib,
         tasty,
         tasty-hunit

@@ -1,0 +1,2 @@
+rec id = \x.(x)
+id y
